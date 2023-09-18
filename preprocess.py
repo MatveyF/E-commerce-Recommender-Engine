@@ -1,7 +1,10 @@
 from pathlib import Path
-import sys
 
 import pandas as pd
+import typer
+
+
+app = typer.Typer()
 
 
 def remove_invalid(df: pd.DataFrame) -> pd.DataFrame:
@@ -17,6 +20,7 @@ def remove_invalid(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+@app.command()
 def preprocess(path_to_xlsx: Path, output_dir_path: Path, split_date: str = "2011-10-12") -> None:
     """Reads original "online_retail_II.xlsx" dataset, removes duplicate overlap, invalid rows, and saves to a csv.
 
@@ -44,8 +48,4 @@ def preprocess(path_to_xlsx: Path, output_dir_path: Path, split_date: str = "201
 
 
 if __name__ == "__main__":
-    input_path = Path(sys.argv[1])
-    output_path = Path(sys.argv[2])
-    date = sys.argv[3]  # 2011-10-12
-
-    preprocess(path_to_xlsx=input_path, path_to_csv=output_path, split_date=date)
+    app()
