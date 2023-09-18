@@ -27,7 +27,9 @@ class CSVLoader(DataLoader):
 class PostgresLoader(DataLoader):
     """Data loader for Postgres database."""
 
-    def __init__(self, dbname: str, user: str, password: str, host: str, port: int, table: str):
+    def __init__(
+        self, dbname: str, user: str, password: str, host: str, port: int, table: str
+    ):
         self.dbname = dbname
         self.user = user
         self.password = password
@@ -41,7 +43,7 @@ class PostgresLoader(DataLoader):
             user=self.user,
             password=self.password,
             host=self.host,
-            port=self.port
+            port=self.port,
         )
 
         cur = conn.cursor()

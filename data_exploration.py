@@ -13,7 +13,12 @@ def find_optimal_data_split(df: pd.DataFrame) -> None:
         df: The dataframe containing transaction data with columns 'InvoiceDate' and 'Customer ID'.
     """
     top_score = 0
-    best_split_date, shared_customers, train_only_customers, test_only_customers = None, None, None, None
+    best_split_date, shared_customers, train_only_customers, test_only_customers = (
+        None,
+        None,
+        None,
+        None,
+    )
 
     # Prioritize customers present in both sets, penalize customers only in test set
     scoring_function = lambda x: 2 * x[0] + x[1] - x[2]
@@ -25,11 +30,13 @@ def find_optimal_data_split(df: pd.DataFrame) -> None:
         train_customers = set(train["Customer ID"])
         test_customers = set(test["Customer ID"])
 
-        score = scoring_function([
-            len(train_customers & test_customers),
-            len(train_customers - test_customers),
-            len(test_customers - train_customers),
-        ])
+        score = scoring_function(
+            [
+                len(train_customers & test_customers),
+                len(train_customers - test_customers),
+                len(test_customers - train_customers),
+            ]
+        )
 
         if score > top_score:
             best_split_date = date
@@ -40,11 +47,15 @@ def find_optimal_data_split(df: pd.DataFrame) -> None:
 
     logger.info(f"Optimal split date: {best_split_date} with:")
     logger.info(f"Number of customers in both train and test sets: {shared_customers}")
-    logger.info(f"Number of customers only in the train dataset: {train_only_customers}")
+    logger.info(
+        f"Number of customers only in the train dataset: {train_only_customers}"
+    )
     logger.info(f"Number of customers only in the test dataset: {test_only_customers}")
 
 
-def find_unsold_items(df: pd.DataFrame, split_date: str, months_before_split: int) -> None:
+def find_unsold_items(
+    df: pd.DataFrame, split_date: str, months_before_split: int
+) -> None:
     """Identify and print the count of items that were not sold during specific periods.
 
     Args:
@@ -55,17 +66,22 @@ def find_unsold_items(df: pd.DataFrame, split_date: str, months_before_split: in
         months_before_split:
             Number of months before the split_date to consider for identifying unsold items.
     """
-    df['InvoiceDate'] = pd.to_datetime(df['InvoiceDate'])
-    all_items = set(df['StockCode'])
+    df["InvoiceDate"] = pd.to_datetime(df["InvoiceDate"])
+    all_items = set(df["StockCode"])
 
     gap_start = pd.Timestamp(split_date) - pd.DateOffset(months=months_before_split)
 
     items_sold_during_gap = set(
-        df.loc[(df['InvoiceDate'] >= gap_start) & (df['InvoiceDate'] < split_date), 'StockCode']
+        df.loc[
+            (df["InvoiceDate"] >= gap_start) & (df["InvoiceDate"] < split_date),
+            "StockCode",
+        ]
     )
 
     potentially_dead_items = all_items - items_sold_during_gap
-    items_sold_in_test_period = set(df.loc[df['InvoiceDate'] >= split_date, 'StockCode'])
+    items_sold_in_test_period = set(
+        df.loc[df["InvoiceDate"] >= split_date, "StockCode"]
+    )
 
     dead_items_sold_in_test = potentially_dead_items & items_sold_in_test_period
     truly_dead_items = potentially_dead_items - items_sold_in_test_period

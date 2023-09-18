@@ -21,7 +21,9 @@ def remove_invalid(df: pd.DataFrame) -> pd.DataFrame:
 
 
 @app.command()
-def preprocess(path_to_xlsx: Path, output_dir_path: Path, split_date: str = "2011-10-12") -> None:
+def preprocess(
+    path_to_xlsx: Path, output_dir_path: Path, split_date: str = "2011-10-12"
+) -> None:
     """Reads original "online_retail_II.xlsx" dataset, removes duplicate overlap, invalid rows, and saves to a csv.
 
     Args:
