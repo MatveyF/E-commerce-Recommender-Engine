@@ -20,6 +20,8 @@ def find_optimal_data_split(df: pd.DataFrame) -> None:
         None,
     )
 
+    df["InvoiceDate"] = pd.to_datetime(df["InvoiceDate"])
+
     # Prioritize customers present in both sets, penalize customers only in test set
     scoring_function = lambda x: 2 * x[0] + x[1] - x[2]
 
