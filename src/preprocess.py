@@ -20,11 +20,23 @@ def remove_invalid(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def preprocess(df_2009_2010, df_2010_2011, split_date) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Data preprocessing"""
+    # Remove duplicate overlap in December of 2010
+    df_2009_2010 = df_2009_2010[df_2009_2010["InvoiceDate"] < "2010-12-01"]
+
+    combined = pd.concat([df_2009_2010, df_2010_2011], axis=0)
+    combined = remove_invalid(combined)
+
+    train = combined[combined["InvoiceDate"] < split_date]
+    test = combined[combined["InvoiceDate"] >= split_date]
+
+    return train, test
+
+
 @app.command()
-def preprocess(
-    path_to_xlsx: Path, output_dir_path: Path, split_date: str = "2011-10-12"
-) -> None:
-    """Reads original "online_retail_II.xlsx" dataset, removes duplicate overlap, invalid rows, and saves to a csv.
+def main(path_to_xlsx: Path, output_dir_path: Path, split_date: str = "2011-10-12") -> None:
+    """Reads original "online_retail_II.xlsx" dataset, preprocesses data, and saves to csvs.
 
     Args:
         path_to_xlsx: Path to where the data in .xlsx format is stored
@@ -36,14 +48,7 @@ def preprocess(
     df_2009_2010 = pd.read_excel(path_to_xlsx, "Year 2009-2010")
     df_2010_2011 = pd.read_excel(path_to_xlsx, "Year 2010-2011")
 
-    # Remove duplicate overlap in December of 2010
-    df_2009_2010 = df_2009_2010[df_2009_2010["InvoiceDate"] < "2010-12-01"]
-
-    combined = pd.concat([df_2009_2010, df_2010_2011], axis=0)
-    combined = remove_invalid(combined)
-
-    train = combined[combined["InvoiceDate"] < split_date]
-    test = combined[combined["InvoiceDate"] >= split_date]
+    train, test = preprocess(df_2009_2010, df_2010_2011, split_date)
 
     train.to_csv(output_dir_path / "train.csv", index=False)
     test.to_csv(output_dir_path / "test.csv", index=False)
