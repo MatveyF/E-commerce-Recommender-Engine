@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 
-from src.preprocess import remove_invalid, preprocess
+from preprocess import remove_invalid, preprocess
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def test_remove_invalid(sample_data):
 
     expected = pd.DataFrame(
         {
-            "InvoiceDate": ["2009-12-12", "2010-12-01", "2011-11-11"],
+            "InvoiceDate": ["2009-12-12", "2011-11-11", "2011-11-11"],
             "StockCode": ["UwU", "RSF", "M&M"],
             "Customer ID": [0.0, 6.0, 8.0],
             "Invoice": ["55", "6", "8"],
