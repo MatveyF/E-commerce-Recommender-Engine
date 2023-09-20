@@ -49,15 +49,11 @@ def find_optimal_data_split(df: pd.DataFrame) -> None:
 
     logger.info(f"Optimal split date: {best_split_date} with:")
     logger.info(f"Number of customers in both train and test sets: {shared_customers}")
-    logger.info(
-        f"Number of customers only in the train dataset: {train_only_customers}"
-    )
+    logger.info(f"Number of customers only in the train dataset: {train_only_customers}")
     logger.info(f"Number of customers only in the test dataset: {test_only_customers}")
 
 
-def find_unsold_items(
-    df: pd.DataFrame, split_date: str, months_before_split: int
-) -> None:
+def find_unsold_items(df: pd.DataFrame, split_date: str, months_before_split: int) -> None:
     """Identify and print the count of items that were not sold during specific periods.
 
     Args:
@@ -81,9 +77,7 @@ def find_unsold_items(
     )
 
     potentially_dead_items = all_items - items_sold_during_gap
-    items_sold_in_test_period = set(
-        df.loc[df["InvoiceDate"] >= split_date, "StockCode"]
-    )
+    items_sold_in_test_period = set(df.loc[df["InvoiceDate"] >= split_date, "StockCode"])
 
     dead_items_sold_in_test = potentially_dead_items & items_sold_in_test_period
     truly_dead_items = potentially_dead_items - items_sold_in_test_period
@@ -92,9 +86,5 @@ def find_unsold_items(
     logger.info(
         f"Count of items considered 'dead' but actually sold during the test period: {len(dead_items_sold_in_test)}"
     )
-    logger.info(
-        f"Count of items not sold after {gap_start} and not in the test period: {len(truly_dead_items)}"
-    )
-    logger.info(
-        f"Total count of items not sold during the gap period: {not_sold_during_gap}"
-    )
+    logger.info(f"Count of items not sold after {gap_start} and not in the test period: {len(truly_dead_items)}")
+    logger.info(f"Total count of items not sold during the gap period: {not_sold_during_gap}")
