@@ -1,4 +1,3 @@
-from typing import Protocol
 from pathlib import Path
 
 import pandas as pd
@@ -6,24 +5,7 @@ from scipy.sparse import coo_matrix
 import joblib
 
 from data_loader import DataLoader
-
-
-class NotFittedError(RuntimeError):
-    pass
-
-
-class ImplicitModel(Protocol):
-    def fit(self, item_user_data: coo_matrix) -> None:
-        ...
-
-    def recommend(
-        self,
-        user_id: int,
-        item_user_data: csr_matrix,
-        N: int,
-        filter_already_liked_items: bool,
-    ) -> tuple[np.ndarray, np.ndarray]:
-        ...
+from definitions import ImplicitModel, NotFittedError
 
 
 class CollaborativeRecommender:
