@@ -9,6 +9,13 @@ from definitions import ImplicitModel, NotFittedError
 
 
 class CollaborativeRecommender:
+    """A collaborative filtering recommender system using implicit feedback.
+
+    Args:
+        loader: DataLoader instance to load the dataset.
+        model: ImplicitModel instance to build the recommender system.
+    """
+
     def __init__(self, loader: DataLoader, model: ImplicitModel):
         self.model = model
         self._fitted = False
@@ -29,6 +36,10 @@ class CollaborativeRecommender:
         self.user_item_csr = self.item_user_coo.T.tocsr()
 
     def fit(self) -> None:
+        """Fits the collaborative recommender model.
+
+        Uses the item-user interactions matrix to fit the model and sets the model to "fitted" status.
+        """
         # Calculate the confidence by multiplying it by our alpha value
         alpha_val = 15
         data_conf = (self.item_user_coo * alpha_val).astype("double")
@@ -37,6 +48,14 @@ class CollaborativeRecommender:
         self._fitted = True
 
     def get_recommendations(self, user_id: int) -> pd.DataFrame:
+        """Returns the recommended items for a given user.
+
+        Args:
+            user_id: The ID of the user for whom to generate recommendations
+
+        Returns:
+            DataFrame containing recommended items and their respective scores
+        """
         self._check_if_fitted()
 
         ids, scores = self.model.recommend(user_id, self.user_item_csr[user_id], N=10, filter_already_liked_items=False)
@@ -60,5 +79,10 @@ class CollaborativeRecommender:
             self._fitted = True
 
     def _check_if_fitted(self) -> None:
+        """Internal utility method to check if the model has been fitted.
+
+        Raises:
+            NotFittedError: If the model has not been fitted yet.
+        """
         if not self._fitted:
             raise NotFittedError("Model has not been fitted yet.")
