@@ -1,16 +1,18 @@
 from pathlib import Path
+
 import pytest
-from pandas import DataFrame
+import pandas as pd
 import numpy as np
+
+from collaborative_recommender import CollaborativeRecommender
 from definitions import ImplicitModel, NotFittedError
 from data_loader import DataLoader
-from collaborative_recommender import CollaborativeRecommender
 
 
 @pytest.fixture
 def mock_data_loader(mocker):
     mock = mocker.MagicMock(spec=DataLoader)
-    mock.load_data.return_value = DataFrame({
+    mock.load_data.return_value = pd.DataFrame({
         "Customer ID": ["1", "2", "3"],
         "StockCode": ["01", "10", "11"],
         "Description": ["foo", "bar", "baz"],
