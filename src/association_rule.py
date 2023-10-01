@@ -29,6 +29,16 @@ class MiningAlgorithm(Enum):
 
 
 class AssociationRuleRecommender:
+    """Association rule recommender.
+
+    Args:
+        loader:
+            DataLoader instance to load the dataset.
+        mining_algorithm:
+            The algorithm to use for frequent itemset mining. Default is apriori.
+
+    """
+
     def __init__(self, loader: DataLoader, mining_algorithm: MiningAlgorithm = MiningAlgorithm.APRIORI):
         self.mining_algorithm = mining_algorithm
         self.data = loader.load_data()
@@ -45,24 +55,36 @@ class AssociationRuleRecommender:
 
         logger.info("AssociationRuleRecommender initialised")
 
-    def fit(self):
+    def fit(self) -> None:
+        """Calculates frequent itemsets and association rules."""
+
         frequent_itemsets = self._frequent_itemset_mining()
 
         self.rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
         self._fitted = True
 
-    def get_recommendations(self, item_id: str) -> pd.DataFrame:
+    def get_recommendations(self, item_id: int, n: int = 10) -> pd.DataFrame:
+        """Get recommendations for a given item.
+
+        Args:
+            item_id: The item for which to get recommendations.
+            n: The number of recommendations to return. Defaults to 10.
+
+        Returns:
+            A DataFrame of recommendations.
+        """
+
         self._check_if_fitted()
 
-        recommendations = self.rules[self.rules["antecedents"].apply(lambda x: item_id in x)]
+        recommendations = self.rules[self.rules["antecedents"].apply(lambda x: str(item_id) in x)]
 
-        recommendations = recommendations.sort_values(by="lift", ascending=False)
+        recommendations = recommendations.sort_values(by="lift", ascending=False).iloc[:n]
         recommendations = recommendations[["antecedents", "consequents", "lift"]]
 
         return recommendations
 
     def _frequent_itemset_mining(self, min_support: float = 0.01) -> pd.DataFrame:
-        """ Perform frequent itemset mining using the specified algorithm and minimum support.
+        """Perform frequent itemset mining using the specified algorithm and minimum support.
 
         Args:
             min_support: The minimum support of the itemsets to be returned. Defaults to 0.01.
@@ -81,6 +103,8 @@ class AssociationRuleRecommender:
         return self.mining_algorithm(self.data, min_support=min_support, use_colnames=True)
 
     def save_model(self, directory_path: Path) -> None:
+        """Saves the association rule model."""
+
         self._check_if_fitted()
 
         with open(directory_path / "association_rule_model.joblib", "wb") as f:
@@ -88,6 +112,8 @@ class AssociationRuleRecommender:
 
     @staticmethod
     def load_model(model_path: Path) -> AssociationRuleRecommender:
+        """Loads the association rule model."""
+
         with open(model_path, "rb") as f:
             return joblib.load(f)
 
@@ -115,6 +141,13 @@ class AssociationRuleRecommender:
             raise
 
     def _check_if_fitted(self) -> None:
+        """Internal utility method to check if the model has been fitted.
+
+        Raises:
+            NotFittedError: If the model has not been fitted yet.
+            ValueError: If no rules are found.
+        """
+
         if not self._fitted:
             raise NotFittedError("Model has not been fitted yet.")
 
