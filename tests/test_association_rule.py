@@ -41,8 +41,8 @@ class TestAssociationRuleRecommender:
         recommender.fit()
         result = recommender.get_recommendations(1)
 
-        assert 2 in [r.stock_code for r in result]
-        assert 3 in [r.stock_code for r in result]
+        assert "2" in [r.stock_code for r in result]
+        assert "3" in [r.stock_code for r in result]
         assert len(result) == 2
 
     def test_save_recommender_not_fitted(self, recommender):

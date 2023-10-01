@@ -90,18 +90,16 @@ class AssociationRuleRecommender:
 
         # Fetching descriptions and combining into a list of Recommendation objects
         for _, row in recommendations.iterrows():
-
             stock_codes: frozenset = row["consequents"]
 
             for stock_code in stock_codes:
-
                 if stock_code in unique_stock_codes:
                     continue
 
                 description = self.item_lookup[self.item_lookup["StockCode"] == stock_code]["Description"].iloc[0]
                 unique_stock_codes.add(stock_code)
 
-                result.append(Recommendation(stock_code=int(stock_code), description=description, score=row["lift"]))
+                result.append(Recommendation(stock_code=stock_code, description=description, score=row["lift"]))
 
         return result
 

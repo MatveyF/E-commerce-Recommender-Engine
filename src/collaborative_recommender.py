@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 
 import pandas as pd
 from scipy.sparse import coo_matrix
@@ -8,6 +9,7 @@ from loguru import logger
 
 from data_loader import DataLoader
 from definitions import ImplicitModel, NotFittedError
+from datamodels import Recommendation
 
 
 class UserBasedCollaborativeRecommender:
@@ -19,11 +21,11 @@ class UserBasedCollaborativeRecommender:
         df: pd.DataFrame = loader.load_data()
 
         # Create a numeric customer_id and stock_code column
-        df["customer_id"] = df["Customer ID"].astype("category").cat.codes
+        df["customer_id"] = df["Customer ID"].astype(int)
         df["stock_code"] = df["StockCode"].astype("category").cat.codes
 
         # Create a lookup frame, so we can get the stock_codes later
-        self.item_lookup = df[["stock_code", "Description"]].drop_duplicates()
+        self.item_lookup = df[["StockCode", "stock_code", "Description"]].drop_duplicates()
         self.item_lookup["stock_code"] = self.item_lookup.stock_code.astype(str)
         self.item_lookup["score"] = 0
 
@@ -50,7 +52,7 @@ class UserBasedCollaborativeRecommender:
             logger.error(f"An error occurred during model fitting: {e}")
             raise e
 
-    def get_recommendations(self, user_id: int, n: int = 10) -> pd.DataFrame:
+    def get_recommendations(self, user_id: int, n: int = 10) -> List[Recommendation]:
         """Returns the recommended items for a given user.
 
         Args:
@@ -58,8 +60,9 @@ class UserBasedCollaborativeRecommender:
             n: The number of recommendations to return
 
         Returns:
-            DataFrame containing recommended items and their respective scores
+            A list of Recommendation objects.
         """
+
         self._check_if_fitted()
 
         ids, scores = self.model.recommend(user_id, self.user_item_csr[user_id], N=n, filter_already_liked_items=False)
@@ -69,7 +72,14 @@ class UserBasedCollaborativeRecommender:
         for id_value, score in zip(ids, scores):
             items.loc[items.stock_code == str(id_value), "score"] = score
 
-        return items
+        return [
+            Recommendation(
+                stock_code=row["StockCode"],
+                description=row["Description"],
+                score=row["score"],
+            )
+            for _, row in items.iterrows()
+        ]
 
     def save_model(self, directory_path: Path) -> None:
         """Saves the collaborative recommender model.
@@ -137,11 +147,11 @@ class ItemBasedCollaborativeRecommender:
         df: pd.DataFrame = loader.load_data()
 
         # Create a numeric customer_id and stock_code column
-        df["customer_id"] = df["Customer ID"].astype("category").cat.codes
+        df["customer_id"] = df["Customer ID"].astype(int)
         df["stock_code"] = df["StockCode"].astype("category").cat.codes
 
         # Create a lookup frame, so we can get the stock_codes later
-        self.item_lookup = df[["stock_code", "Description"]].drop_duplicates()
+        self.item_lookup = df[["StockCode", "stock_code", "Description"]].drop_duplicates()
         self.item_lookup["stock_code"] = self.item_lookup.stock_code.astype(str)
         self.item_lookup["score"] = 0
 
@@ -165,7 +175,7 @@ class ItemBasedCollaborativeRecommender:
             logger.error(f"An error occurred during item similarity computation: {e}")
             raise e
 
-    def get_recommendations(self, item_id: int, n: int = 10) -> pd.DataFrame:
+    def get_recommendations(self, item_id: int, n: int = 10) -> List[Recommendation]:
         """Returns the recommended items for a given item.
 
         Args:
@@ -173,7 +183,7 @@ class ItemBasedCollaborativeRecommender:
             n: The number of recommendations to return
 
         Returns:
-            DataFrame containing recommended items and their respective scores
+            A list of Recommendation objects.
 
         Raises:
             ValueError: If the item similarity matrix is not initialized.
@@ -193,7 +203,14 @@ class ItemBasedCollaborativeRecommender:
         for id_value, score in zip(ids, scores):
             items.loc[items.stock_code == str(id_value), "score"] = score
 
-        return items
+        return [
+            Recommendation(
+                stock_code=row["StockCode"],
+                description=row["Description"],
+                score=row["score"],
+            )
+            for _, row in items.iterrows()
+        ]
 
     def cache_item_similarity(self, directory_path: Path) -> None:
         """Caches the item similarity matrix.

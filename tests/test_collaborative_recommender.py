@@ -13,10 +13,10 @@ from data_loader import DataLoader
 def mock_data_loader(mocker):
     mock = mocker.MagicMock(spec=DataLoader)
     mock.load_data.return_value = pd.DataFrame({
-        "Customer ID": ["1", "2", "3"],
-        "StockCode": ["01", "10", "11"],
-        "Description": ["foo", "bar", "baz"],
-        "Quantity": [5, 5, 5],
+        "Customer ID": ["1", "1", "2", "2", "3"],
+        "StockCode": ["1", "2", "1", "2", "1"],
+        "Description": ["foo", "bar", "foo", "bar", "foo"],
+        "Quantity": [5, 5, 5, 5, 5],
     })
     return mock
 
@@ -52,7 +52,9 @@ class TestUserBasedCollaborativeRecommender:
         # Mock the return values
         user_based_recommender.model.recommend.return_value = (np.array([1, 2, 3]), np.array([0.8, 0.7, 0.6]))
         user_based_recommender.fit()
-        user_based_recommender.get_recommendations(1)
+        result = user_based_recommender.get_recommendations(1)
+
+        assert "2" in [r.stock_code for r in result]
 
     def test_save_model_not_fitted(self, user_based_recommender):
         with pytest.raises(NotFittedError):
@@ -75,7 +77,9 @@ class TestItemBasedCollaborativeRecommender:
         # Mock the return values
         item_based_recommender.model.recommend.return_value = (np.array([1, 2, 3]), np.array([0.8, 0.7, 0.6]))
         item_based_recommender.fit()
-        item_based_recommender.get_recommendations(1)
+        result = item_based_recommender.get_recommendations(1)
+
+        assert "2" in [r.stock_code for r in result]
 
     def test_cache_item_similarity_not_fitted(self, item_based_recommender):
         with pytest.raises(NotFittedError):
