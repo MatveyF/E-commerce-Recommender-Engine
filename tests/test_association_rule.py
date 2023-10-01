@@ -10,8 +10,9 @@ from definitions import NotFittedError
 def mock_data_loader(mocker):
     mock = mocker.MagicMock(spec=DataLoader)
     mock.load_data.return_value = pd.DataFrame({
-        "Customer ID": ["1", "1", "2", "2"],
-        "StockCode": ["1", "2", "1", "2"],
+        "Customer ID": ["1", "1", "1", "2", "2"],
+        "StockCode": ["1", "2", "3", "1", "2"],
+        "Description": ["foo", "bar", "baz", "foo", "bar"],
     })
     return mock
 
@@ -40,9 +41,9 @@ class TestAssociationRuleRecommender:
         recommender.fit()
         result = recommender.get_recommendations(1)
 
-        assert isinstance(result, pd.DataFrame)
-        assert "2" in result["consequents"].values[0]
-        assert len(result) <= 10
+        assert 2 in [r.stock_code for r in result]
+        assert 3 in [r.stock_code for r in result]
+        assert len(result) == 2
 
     def test_save_recommender_not_fitted(self, recommender):
         with pytest.raises(NotFittedError):

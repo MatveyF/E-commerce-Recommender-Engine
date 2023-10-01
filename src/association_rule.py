@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 from enum import Enum
+from typing import List
 
 from mlxtend.frequent_patterns import apriori, fpgrowth, fpmax, hmine, association_rules
 from mlxtend.preprocessing import TransactionEncoder
@@ -10,6 +11,7 @@ from loguru import logger
 
 from data_loader import DataLoader
 from definitions import NotFittedError
+from datamodels import Recommendation
 
 
 class MiningAlgorithm(Enum):
@@ -36,19 +38,21 @@ class AssociationRuleRecommender:
             DataLoader instance to load the dataset.
         mining_algorithm:
             The algorithm to use for frequent itemset mining. Default is apriori.
-
     """
 
     def __init__(self, loader: DataLoader, mining_algorithm: MiningAlgorithm = MiningAlgorithm.APRIORI):
         self.mining_algorithm = mining_algorithm
-        self.data = loader.load_data()
+        self.df = loader.load_data()
 
-        self.data = self.data[["StockCode", "Customer ID"]]
+        # Create a lookup frame, so we can get the descriptions later
+        self.item_lookup = self.df[["StockCode", "Description"]].drop_duplicates()
+
+        self.df = self.df[["StockCode", "Customer ID"]]
         transactional_encoder = TransactionEncoder()
         encoded_data = transactional_encoder.fit_transform(
-            self.data.groupby("Customer ID")["StockCode"].apply(list).values
+            self.df.groupby("Customer ID")["StockCode"].apply(list).values
         )
-        self.data = pd.DataFrame(encoded_data, columns=transactional_encoder.columns_)
+        self.df = pd.DataFrame(encoded_data, columns=transactional_encoder.columns_)
 
         self.rules = None
         self._fitted = False
@@ -63,7 +67,7 @@ class AssociationRuleRecommender:
         self.rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
         self._fitted = True
 
-    def get_recommendations(self, item_id: int, n: int = 10) -> pd.DataFrame:
+    def get_recommendations(self, item_id: int, n: int = 10) -> List[Recommendation]:
         """Get recommendations for a given item.
 
         Args:
@@ -71,7 +75,7 @@ class AssociationRuleRecommender:
             n: The number of recommendations to return. Defaults to 10.
 
         Returns:
-            A DataFrame of recommendations.
+            A list of Recommendation objects.
         """
 
         self._check_if_fitted()
@@ -79,9 +83,27 @@ class AssociationRuleRecommender:
         recommendations = self.rules[self.rules["antecedents"].apply(lambda x: str(item_id) in x)]
 
         recommendations = recommendations.sort_values(by="lift", ascending=False).iloc[:n]
-        recommendations = recommendations[["antecedents", "consequents", "lift"]]
+        recommendations = recommendations[["consequents", "lift"]]
 
-        return recommendations
+        unique_stock_codes = set()
+        result = []
+
+        # Fetching descriptions and combining into a list of Recommendation objects
+        for _, row in recommendations.iterrows():
+
+            stock_codes: frozenset = row["consequents"]
+
+            for stock_code in stock_codes:
+
+                if stock_code in unique_stock_codes:
+                    continue
+
+                description = self.item_lookup[self.item_lookup["StockCode"] == stock_code]["Description"].iloc[0]
+                unique_stock_codes.add(stock_code)
+
+                result.append(Recommendation(stock_code=int(stock_code), description=description, score=row["lift"]))
+
+        return result
 
     def _frequent_itemset_mining(self, min_support: float = 0.01) -> pd.DataFrame:
         """Perform frequent itemset mining using the specified algorithm and minimum support.
@@ -100,7 +122,7 @@ class AssociationRuleRecommender:
             logger.error(f"Invalid mining algorithm : {self.mining_algorithm}")
             raise ValueError(f"Invalid mining algorithm : {self.mining_algorithm}")
 
-        return self.mining_algorithm(self.data, min_support=min_support, use_colnames=True)
+        return self.mining_algorithm(self.df, min_support=min_support, use_colnames=True)
 
     def save_model(self, directory_path: Path) -> None:
         """Saves the association rule model."""
