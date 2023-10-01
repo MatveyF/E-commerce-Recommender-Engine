@@ -1,7 +1,15 @@
 from typing import Protocol
+from dataclasses import dataclass
 
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix
+
+
+@dataclass
+class Recommendation:
+    stock_code: str
+    description: str
+    score: float
 
 
 class NotFittedError(RuntimeError):

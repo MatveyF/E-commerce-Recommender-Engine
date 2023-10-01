@@ -8,8 +8,7 @@ import joblib
 from loguru import logger
 
 from data_loader import DataLoader
-from definitions import ImplicitModel, NotFittedError
-from datamodels import Recommendation
+from definitions import ImplicitModel, NotFittedError, Recommendation
 
 
 class UserBasedCollaborativeRecommender:

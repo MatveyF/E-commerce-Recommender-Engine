@@ -10,8 +10,7 @@ import joblib
 from loguru import logger
 
 from data_loader import DataLoader
-from definitions import NotFittedError
-from datamodels import Recommendation
+from definitions import NotFittedError, Recommendation
 
 
 class MiningAlgorithm(Enum):
