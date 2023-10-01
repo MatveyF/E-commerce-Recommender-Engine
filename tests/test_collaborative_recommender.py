@@ -4,7 +4,7 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from collaborative_recommender import CollaborativeRecommender
+from collaborative_recommender import CollaborativeRecommender, CollaborativeMethod
 from definitions import ImplicitModel, NotFittedError
 from data_loader import DataLoader
 
@@ -39,15 +39,32 @@ class TestCollaborativeRecommender:
         recommender.fit()
         assert recommender._fitted is True
 
-    def test_get_recommendations_not_fitted(self, recommender):
+    def test_get_user_recommendations_not_fitted(self, recommender):
         with pytest.raises(NotFittedError):
-            recommender.get_recommendations(1)
+            recommender.get_user_recommendations(1)
 
-    def test_get_recommendations(self, recommender):
+    def test_get_item_recommendations_not_fitted(self, recommender):
+        with pytest.raises(NotFittedError):
+            recommender.get_item_recommendations(1)
+
+    def test_get_user_recommendations(self, recommender):
         # Mock the return values
         recommender.model.recommend.return_value = (np.array([1, 2, 3]), np.array([0.8, 0.7, 0.6]))
         recommender.fit()
-        recommender.get_recommendations(1)
+        recommender.get_user_recommendations(1)
+
+    def test_get_item_recommendations(self, mock_data_loader, mock_model):
+        recommender = CollaborativeRecommender(mock_data_loader, mock_model, method=CollaborativeMethod.ITEM_BASED)
+
+        # Mock the return values
+        recommender.model.recommend.return_value = (np.array([1, 2, 3]), np.array([0.8, 0.7, 0.6]))
+        recommender.fit()
+        recommender.get_item_recommendations(1)
+
+    def test_get_item_recommendations_for_user_based_raises_error(self, recommender):
+        recommender.fit()
+        with pytest.raises(ValueError):
+            recommender.get_item_recommendations(1)
 
     def test_save_model_not_fitted(self, recommender):
         with pytest.raises(NotFittedError):
