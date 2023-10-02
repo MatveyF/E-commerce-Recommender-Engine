@@ -15,7 +15,7 @@ class UserBasedCollaborativeRecommender:
     def __init__(self, loader: DataLoader, model: ImplicitModel, alpha_val: float = 15):
         self.model = model
         self.alpha_val = alpha_val
-        self._fitted = False
+        self.fitted = False
 
         df: pd.DataFrame = loader.load_data()
 
@@ -24,13 +24,13 @@ class UserBasedCollaborativeRecommender:
         df["stock_code"] = df["StockCode"].astype("category").cat.codes
 
         # Create a lookup frame, so we can get the stock_codes later
-        self.item_lookup = df[["StockCode", "stock_code", "Description"]].drop_duplicates()
-        self.item_lookup["stock_code"] = self.item_lookup.stock_code.astype(str)
-        self.item_lookup["score"] = 0
+        self._item_lookup = df[["StockCode", "stock_code", "Description"]].drop_duplicates()
+        self._item_lookup["stock_code"] = self._item_lookup.stock_code.astype(str)
+        self._item_lookup["score"] = 0
 
         # Create sparse matrices
-        self.item_user_coo = coo_matrix((df["Quantity"].astype(float), (df["stock_code"], df["customer_id"])))
-        self.user_item_csr = self.item_user_coo.T.tocsr()
+        self._item_user_coo = coo_matrix((df["Quantity"].astype(float), (df["stock_code"], df["customer_id"])))
+        self._user_item_csr = self._item_user_coo.T.tocsr()
 
         logger.info("Collaborative recommender initialised")
 
@@ -41,11 +41,11 @@ class UserBasedCollaborativeRecommender:
         """
 
         # Calculate the confidence by multiplying it by the alpha value
-        data_conf = (self.item_user_coo * self.alpha_val).astype("double")
+        data_conf = (self._item_user_coo * self.alpha_val).astype("double")
 
         try:
             self.model.fit(data_conf)
-            self._fitted = True
+            self.fitted = True
             logger.info("Collaborative recommender (user-based) has been fitted")
         except Exception as e:
             logger.error(f"An error occurred during model fitting: {e}")
@@ -64,9 +64,9 @@ class UserBasedCollaborativeRecommender:
 
         self._check_if_fitted()
 
-        ids, scores = self.model.recommend(user_id, self.user_item_csr[user_id], N=n, filter_already_liked_items=False)
+        ids, scores = self.model.recommend(user_id, self._user_item_csr[user_id], N=n, filter_already_liked_items=False)
 
-        items = self.item_lookup[self.item_lookup.stock_code.isin(ids.astype(str))]
+        items = self._item_lookup[self._item_lookup.stock_code.isin(ids.astype(str))]
 
         for id_value, score in zip(ids, scores):
             items.loc[items.stock_code == str(id_value), "score"] = score
@@ -111,7 +111,7 @@ class UserBasedCollaborativeRecommender:
         try:
             with open(model_path, "rb") as f:
                 self.model = joblib.load(f)
-                self._fitted = True
+                self.fitted = True
                 logger.info("Collaborative model loaded successfully")
         except Exception as e:
             logger.error(f"An error occurred while loading the model: {e}")
@@ -123,7 +123,7 @@ class UserBasedCollaborativeRecommender:
         Raises:
             NotFittedError: If the model has not been fitted yet.
         """
-        if not self._fitted:
+        if not self.fitted:
             logger.error("Collaborative recommender has not been fitted yet. Please use `fit()` method first")
             raise NotFittedError("Model has not been fitted yet.")
 
@@ -134,13 +134,10 @@ class ItemBasedCollaborativeRecommender:
     Args:
         loader:
             DataLoader instance to load the dataset.
-        model:
-            ImplicitModel instance to build the recommender system.
     """
 
-    def __init__(self, loader: DataLoader, model: ImplicitModel):
-        self.model = model
-        self._fitted = False
+    def __init__(self, loader: DataLoader):
+        self.fitted = False
         self.item_similarity = None
 
         df: pd.DataFrame = loader.load_data()
@@ -150,13 +147,12 @@ class ItemBasedCollaborativeRecommender:
         df["stock_code"] = df["StockCode"].astype("category").cat.codes
 
         # Create a lookup frame, so we can get the stock_codes later
-        self.item_lookup = df[["StockCode", "stock_code", "Description"]].drop_duplicates()
-        self.item_lookup["stock_code"] = self.item_lookup.stock_code.astype(str)
-        self.item_lookup["score"] = 0
+        self._item_lookup = df[["StockCode", "stock_code", "Description"]].drop_duplicates()
+        self._item_lookup["stock_code"] = self._item_lookup.stock_code.astype(str)
+        self._item_lookup["score"] = 0
 
         # Create sparse matrices
-        self.item_user_coo = coo_matrix((df["Quantity"].astype(float), (df["stock_code"], df["customer_id"])))
-        self.user_item_csr = self.item_user_coo.T.tocsr()
+        self._item_user_coo = coo_matrix((df["Quantity"].astype(float), (df["stock_code"], df["customer_id"])))
 
         logger.info("Collaborative recommender initialised")
 
@@ -167,8 +163,8 @@ class ItemBasedCollaborativeRecommender:
         """
 
         try:
-            self.item_similarity = cosine_similarity(self.item_user_coo)
-            self._fitted = True
+            self.item_similarity = cosine_similarity(self._item_user_coo)
+            self.fitted = True
             logger.info("Collaborative recommender (item-based) has been initialized with item similarities")
         except Exception as e:
             logger.error(f"An error occurred during item similarity computation: {e}")
@@ -197,7 +193,7 @@ class ItemBasedCollaborativeRecommender:
         ids = similar_items.argsort()[-n:][::-1]
         scores = similar_items[ids]
 
-        items = self.item_lookup[self.item_lookup.stock_code.isin(ids.astype(str))]
+        items = self._item_lookup[self._item_lookup.stock_code.isin(ids.astype(str))]
 
         for id_value, score in zip(ids, scores):
             items.loc[items.stock_code == str(id_value), "score"] = score
@@ -249,7 +245,7 @@ class ItemBasedCollaborativeRecommender:
         try:
             with open(item_similarity_path, "rb") as f:
                 self.item_similarity = joblib.load(f)
-                self._fitted = True
+                self.fitted = True
                 logger.info("Item similarity matrix loaded successfully")
         except Exception as e:
             logger.error(f"An error occurred while loading the item similarity matrix: {e}")
@@ -262,7 +258,7 @@ class ItemBasedCollaborativeRecommender:
             NotFittedError: If the model has not been fitted yet.
             ValueError: If the item similarity matrix is not initialized.
         """
-        if not self._fitted:
+        if not self.fitted:
             logger.error("Collaborative recommender has not been fitted yet. Please use `fit()` method first")
             raise NotFittedError("Model has not been fitted yet.")
 

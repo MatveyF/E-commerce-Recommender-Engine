@@ -32,17 +32,17 @@ def user_based_recommender(mock_data_loader, mock_model):
 
 
 @pytest.fixture
-def item_based_recommender(mock_data_loader, mock_model):
-    return ItemBasedCollaborativeRecommender(mock_data_loader, mock_model)
+def item_based_recommender(mock_data_loader):
+    return ItemBasedCollaborativeRecommender(mock_data_loader)
 
 
 class TestUserBasedCollaborativeRecommender:
     def test_init(self, user_based_recommender):
-        assert user_based_recommender._fitted is False
+        assert user_based_recommender.fitted is False
 
     def test_fit_fitted(self, user_based_recommender):
         user_based_recommender.fit()
-        assert user_based_recommender._fitted is True
+        assert user_based_recommender.fitted is True
 
     def test_get_recommendations_not_fitted(self, user_based_recommender):
         with pytest.raises(NotFittedError):
@@ -63,19 +63,17 @@ class TestUserBasedCollaborativeRecommender:
 
 class TestItemBasedCollaborativeRecommender:
     def test_init(self, item_based_recommender):
-        assert item_based_recommender._fitted is False
+        assert item_based_recommender.fitted is False
 
     def test_fit_fitted(self, item_based_recommender):
         item_based_recommender.fit()
-        assert item_based_recommender._fitted is True
+        assert item_based_recommender.fitted is True
 
     def test_get_recommendations_not_fitted(self, item_based_recommender):
         with pytest.raises(NotFittedError):
             item_based_recommender.get_recommendations(1)
 
     def test_get_recommendations(self, item_based_recommender):
-        # Mock the return values
-        item_based_recommender.model.recommend.return_value = (np.array([1, 2, 3]), np.array([0.8, 0.7, 0.6]))
         item_based_recommender.fit()
         result = item_based_recommender.get_recommendations(1)
 

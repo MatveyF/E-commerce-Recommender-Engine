@@ -26,11 +26,11 @@ class TestAssociationRuleRecommender:
     def test_initialisation(self, mock_data_loader):
         recommender = AssociationRuleRecommender(mock_data_loader, MiningAlgorithm.APRIORI)
         assert recommender.mining_algorithm == MiningAlgorithm.APRIORI
-        assert recommender._fitted is False
+        assert recommender.fitted is False
 
     def test_fit_method(self, recommender):
         recommender.fit()
-        assert recommender._fitted is True
+        assert recommender.fitted is True
         assert recommender.rules is not None
 
     def test_get_recommendations_without_fit(self, recommender):

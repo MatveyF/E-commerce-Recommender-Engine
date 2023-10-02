@@ -44,7 +44,7 @@ class AssociationRuleRecommender:
         self.df = loader.load_data()
 
         # Create a lookup frame, so we can get the descriptions later
-        self.item_lookup = self.df[["StockCode", "Description"]].drop_duplicates()
+        self._item_lookup = self.df[["StockCode", "Description"]].drop_duplicates()
 
         self.df = self.df[["StockCode", "Customer ID"]]
         transactional_encoder = TransactionEncoder()
@@ -54,7 +54,7 @@ class AssociationRuleRecommender:
         self.df = pd.DataFrame(encoded_data, columns=transactional_encoder.columns_)
 
         self.rules = None
-        self._fitted = False
+        self.fitted = False
 
         logger.info("AssociationRuleRecommender initialised")
 
@@ -64,7 +64,7 @@ class AssociationRuleRecommender:
         frequent_itemsets = self._frequent_itemset_mining()
 
         self.rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
-        self._fitted = True
+        self.fitted = True
 
     def get_recommendations(self, item_id: int, n: int = 10) -> List[Recommendation]:
         """Get recommendations for a given item.
@@ -95,7 +95,7 @@ class AssociationRuleRecommender:
                 if stock_code in unique_stock_codes:
                     continue
 
-                description = self.item_lookup[self.item_lookup["StockCode"] == stock_code]["Description"].iloc[0]
+                description = self._item_lookup[self._item_lookup["StockCode"] == stock_code]["Description"].iloc[0]
                 unique_stock_codes.add(stock_code)
 
                 result.append(Recommendation(stock_code=stock_code, description=description, score=row["lift"]))
@@ -131,15 +131,33 @@ class AssociationRuleRecommender:
 
     @staticmethod
     def load_model(model_path: Path) -> AssociationRuleRecommender:
-        """Loads the association rule model."""
+        """Loads the association rule model.
+
+        Args:
+            model_path: The path to the association rule model.
+
+        Returns:
+            The loaded AssociationRuleRecommender instance.
+
+        Raises:
+            ValueError: If the model is not fitted.
+        """
 
         with open(model_path, "rb") as f:
-            return joblib.load(f)
+            recommender = joblib.load(f)
+
+            if not recommender.fitted:
+                logger.error("Association rule model is not fitted")
+                raise ValueError("Association rule model is not fitted")
+
+            return recommender
 
     def cache_rules(self, directory_path: Path) -> None:
         """Caches the association rules."""
 
         self._check_if_fitted()
+
+        logger.info(f"Caching association rules at {directory_path}")
 
         try:
             with open(directory_path / "association_rules.csv", "w") as f:
@@ -149,11 +167,15 @@ class AssociationRuleRecommender:
             raise
 
     def load_rules_from_cache(self, rule_path: Path) -> None:
-        """Loads the association rules from cache."""
+        """Loads the association rules from cache.
+
+        Args:
+            rule_path: The path to the cached association rules.
+        """
 
         try:
             self.rules = pd.read_csv(rule_path)
-            self._fitted = True
+            self.fitted = True
             logger.info("Rules loaded successfully")
         except Exception as e:
             logger.error(f"An error occurred while loading the rules: {e}")
@@ -167,7 +189,7 @@ class AssociationRuleRecommender:
             ValueError: If no rules are found.
         """
 
-        if not self._fitted:
+        if not self.fitted:
             raise NotFittedError("Model has not been fitted yet.")
 
         elif self.rules is None:
