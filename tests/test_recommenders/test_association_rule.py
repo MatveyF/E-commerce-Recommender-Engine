@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 
-from association_rule import MiningAlgorithm, AssociationRuleRecommender
+from recommenders.association_rule import MiningAlgorithm, AssociationRuleRecommender
 from data_loader import DataLoader
 from definitions import NotFittedError
 

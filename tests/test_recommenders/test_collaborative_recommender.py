@@ -4,7 +4,7 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from collaborative_recommender import UserBasedCollaborativeRecommender, ItemBasedCollaborativeRecommender
+from recommenders.collaborative_recommender import UserBasedCollaborativeRecommender, ItemBasedCollaborativeRecommender
 from definitions import ImplicitModel, NotFittedError
 from data_loader import DataLoader
 
