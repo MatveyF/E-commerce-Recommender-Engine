@@ -60,7 +60,6 @@ class AssociationRuleRecommender:
 
     def fit(self) -> None:
         """Calculates frequent itemsets and association rules."""
-
         frequent_itemsets = self._frequent_itemset_mining()
 
         self.rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
@@ -76,11 +75,9 @@ class AssociationRuleRecommender:
         Returns:
             A list of Recommendation objects.
         """
-
         self._check_if_fitted()
 
         recommendations = self.rules[self.rules["antecedents"].apply(lambda x: str(item_id) in x)]
-
         recommendations = recommendations.sort_values(by="lift", ascending=False).iloc[:n]
         recommendations = recommendations[["consequents", "lift"]]
 
@@ -114,16 +111,15 @@ class AssociationRuleRecommender:
         Raises:
             ValueError: If an invalid mining algorithm is specified.
         """
-
         if self.mining_algorithm not in MiningAlgorithm:
-            logger.error(f"Invalid mining algorithm : {self.mining_algorithm}")
-            raise ValueError(f"Invalid mining algorithm : {self.mining_algorithm}")
+            error_message = f"Invalid mining algorithm : {self.mining_algorithm}"
+            logger.error(error_message)
+            raise ValueError(error_message)
 
         return self.mining_algorithm(self.df, min_support=min_support, use_colnames=True)
 
     def save_model(self, directory_path: Path) -> None:
         """Saves the association rule model."""
-
         self._check_if_fitted()
 
         with open(directory_path / "association_rule_model.joblib", "wb") as f:
@@ -142,21 +138,19 @@ class AssociationRuleRecommender:
         Raises:
             ValueError: If the model is not fitted.
         """
-
         with open(model_path, "rb") as f:
             recommender = joblib.load(f)
 
             if not recommender.fitted:
-                logger.error("Association rule model is not fitted")
-                raise ValueError("Association rule model is not fitted")
+                error_message = "Association rule model is not fitted"
+                logger.error(error_message)
+                raise ValueError(error_message)
 
             return recommender
 
     def cache_rules(self, directory_path: Path) -> None:
         """Caches the association rules."""
-
         self._check_if_fitted()
-
         logger.info(f"Caching association rules at {directory_path}")
 
         try:
@@ -172,7 +166,6 @@ class AssociationRuleRecommender:
         Args:
             rule_path: The path to the cached association rules.
         """
-
         try:
             self.rules = pd.read_csv(rule_path)
             self.fitted = True
@@ -188,9 +181,12 @@ class AssociationRuleRecommender:
             NotFittedError: If the model has not been fitted yet.
             ValueError: If no rules are found.
         """
-
         if not self.fitted:
-            raise NotFittedError("Model has not been fitted yet.")
+            error_message = "The recommender has not been fitted yet. Please use fit() method, or load the recommender."
+            logger.error(error_message)
+            raise NotFittedError(error_message)
 
         elif self.rules is None:
-            raise ValueError("No rules found. Please fit the model first to generate rules.")
+            error_message = "No rules found. Please use fit() method, or load the recommender."
+            logger.error(error_message)
+            raise ValueError(error_message)

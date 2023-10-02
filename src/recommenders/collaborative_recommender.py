@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import pandas as pd
 from scipy.sparse import coo_matrix
@@ -12,7 +12,19 @@ from definitions import ImplicitModel, NotFittedError, Recommendation
 
 
 class UserBasedCollaborativeRecommender:
-    def __init__(self, loader: DataLoader, model: ImplicitModel, alpha_val: float = 15):
+    """A user-based collaborative recommender system using implicit feedback.
+
+    Args:
+        loader:
+            DataLoader instance to load the dataset.
+        model:
+            An implicit model to use for the recommender. If not provided, it is expected that the model will be
+            loaded. Default is None.
+        alpha_val:
+            The alpha value to use for the confidence matrix. Default is 15.
+    """
+
+    def __init__(self, loader: DataLoader, model: Optional[ImplicitModel] = None, alpha_val: float = 15):
         self.model = model
         self.alpha_val = alpha_val
         self.fitted = False
@@ -38,7 +50,14 @@ class UserBasedCollaborativeRecommender:
         """Fits the collaborative recommender model.
 
         Fits a model from the implicit library and sets the model to "fitted" status.
+
+        Raises:
+            ValueError: If the model is not initialized.
         """
+        if self.model is None:
+            error_message = "Collaborative recommender model is not initialized, please load a model first"
+            logger.error(error_message)
+            raise ValueError(error_message)
 
         # Calculate the confidence by multiplying it by the alpha value
         data_conf = (self._item_user_coo * self.alpha_val).astype("double")
@@ -61,7 +80,6 @@ class UserBasedCollaborativeRecommender:
         Returns:
             A list of Recommendation objects.
         """
-
         self._check_if_fitted()
 
         ids, scores = self.model.recommend(user_id, self._user_item_csr[user_id], N=n, filter_already_liked_items=False)
@@ -86,7 +104,6 @@ class UserBasedCollaborativeRecommender:
         Args:
             directory_path: The directory path where the model will be saved.
         """
-
         self._check_if_fitted()
 
         logger.info(f"Saving a collaborative recommender model at {directory_path}")
@@ -105,7 +122,6 @@ class UserBasedCollaborativeRecommender:
         Args:
             model_path: The path to the collaborative recommender model.
         """
-
         logger.info(f"Loading a collaborative recommender model from {model_path}")
 
         try:
@@ -122,10 +138,17 @@ class UserBasedCollaborativeRecommender:
 
         Raises:
             NotFittedError: If the model has not been fitted yet.
+            ValueError: If the model is not initialized.
         """
         if not self.fitted:
-            logger.error("Collaborative recommender has not been fitted yet. Please use `fit()` method first")
-            raise NotFittedError("Model has not been fitted yet.")
+            error_message = "Collaborative recommender has not been fitted yet. Please use `fit()` method first"
+            logger.error(error_message)
+            raise NotFittedError(error_message)
+
+        if self.model is None:
+            error_message = "Collaborative recommender model is not initialized, please load a model first"
+            logger.error(error_message)
+            raise ValueError(error_message)
 
 
 class ItemBasedCollaborativeRecommender:
@@ -161,7 +184,6 @@ class ItemBasedCollaborativeRecommender:
 
         Computes the cosine similarity between items and sets the model to "fitted" status.
         """
-
         try:
             self.item_similarity = cosine_similarity(self._item_user_coo)
             self.fitted = True
@@ -186,8 +208,9 @@ class ItemBasedCollaborativeRecommender:
         self._check_if_fitted()
 
         if self.item_similarity is None:
-            logger.error("Item similarity matrix is not initialized")
-            raise ValueError("Item similarity matrix is not initialized")
+            error_message = "Item similarity matrix is not initialized"
+            logger.error(error_message)
+            raise ValueError(error_message)
 
         similar_items = self.item_similarity[item_id]
         ids = similar_items.argsort()[-n:][::-1]
@@ -216,12 +239,12 @@ class ItemBasedCollaborativeRecommender:
         Raises:
             ValueError: If the item similarity matrix is not initialized.
         """
-
         self._check_if_fitted()
 
         if self.item_similarity is None:
-            logger.error("Item similarity matrix is not initialized")
-            raise ValueError("Item similarity matrix is not initialized")
+            error_message = "Item similarity matrix is not initialized"
+            logger.error(error_message)
+            raise ValueError(error_message)
 
         logger.info(f"Caching item similarity matrix at {directory_path}")
 
@@ -239,7 +262,6 @@ class ItemBasedCollaborativeRecommender:
         Args:
             item_similarity_path: The path to the cached item similarity matrix.
         """
-
         logger.info(f"Loading item similarity matrix from {item_similarity_path}")
 
         try:
@@ -259,9 +281,11 @@ class ItemBasedCollaborativeRecommender:
             ValueError: If the item similarity matrix is not initialized.
         """
         if not self.fitted:
-            logger.error("Collaborative recommender has not been fitted yet. Please use `fit()` method first")
-            raise NotFittedError("Model has not been fitted yet.")
+            error_message = "Collaborative recommender has not been fitted yet. Please use `fit()` method first"
+            logger.error(error_message)
+            raise NotFittedError(error_message)
 
         if self.item_similarity is None:
-            logger.error("Item similarity matrix is not initialized")
-            raise ValueError("Item similarity matrix is not initialized")
+            error_message = "Item similarity matrix is not initialized"
+            logger.error(error_message)
+            raise ValueError(error_message)

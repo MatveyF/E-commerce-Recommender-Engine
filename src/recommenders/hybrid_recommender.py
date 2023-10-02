@@ -19,7 +19,7 @@ class HybridRecommender:
         self.item_based_collaborative_recommender = item_based_collaborative_recommender
         self.association_rule_recommender = association_rule_recommender
 
-        self.data = loader.load_data()
+        self.data = loader.load_data()  # todo: is this needed? Maybe remove it
 
     def fit(self) -> None:
         self.user_based_collaborative_recommender.fit()
@@ -28,7 +28,6 @@ class HybridRecommender:
 
     def get_home_page_recommendations(self, user_id: int, n: int = 10) -> List[Recommendation]:
         """Retrieve recommendations for home page"""
-
         return self.user_based_collaborative_recommender.get_recommendations(user_id, n)
 
     def get_item_page_recommendations(self, item_id: int, n: int = 10) -> List[Recommendation]:
